@@ -1,22 +1,32 @@
 import './App.css';
-import { invoke } from '@tauri-apps/api/tauri'
+import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/tauri'
 
 const App = () => {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+  const [list, setList] = useState([]);
 
   useEffect(() => {
-    if (!data) {
-      invoke('my_custom_command').then((message) => setData(message)).catch(error => setError(error))
-    }
-    console.log(data)
-  }, [data])
-  console.log("Any Error?:", error)
+    const myFunc = async () => await unlistenHandler();
+    myFunc();
+  },[])
+
+  const unlistenHandler = async () => {
+    return await listen('rust-event', (event) => {
+        const batch = JSON.parse(event.payload);
+        setList(currentList => [...currentList, ...batch]);
+    })
+  }
+
+  const handleClick = async () => {
+    invoke('my_custom_command').catch(error => console.log("Erorrrrr:", error));
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <p>{data || "nothing yet"}</p>
+        <button onClick={handleClick}>Click Me!</button>
+        {list.map((item, i) => <li key={i}>{item.first} - {item.last}</li>)}
       </header>
     </div>
   );
